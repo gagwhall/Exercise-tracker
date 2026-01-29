@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Streak Tracker</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Staatliches&family=Work+Sans:wght@400;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-dark: #0a0e27;
+            --bg-card: #151b3d;
+            --accent-fire: #ff4757;
+            --accent-electric: #00d8ff;
+            --accent-gold: #ffd93d;
+            --text-primary: #ffffff;
+            --text-muted: #8b92b8;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --checkbox-bg: #1e2749;
+        }
+        
+        body {
+            font-family: 'Work Sans', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1f4d 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+            background-attachment: fixed;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        /* Streak Header - The Hook */
+        .streak-hero {
+            background: linear-gradient(135deg, var(--accent-fire) 0%, var(--accent-electric) 100%);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(255, 71, 87, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .streak-hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 3s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        
+        .streak-number {
+            font-family: 'Staatliches', cursive;
+            font-size: 80px;
+            line-height: 1;
+            margin-bottom: 5px;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .streak-label {
+            font-size: 18px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .streak-fire {
+            font-size: 40px;
+            margin-bottom: 10px;
+            animation: flicker 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes flicker {
+            0%, 100% { transform: scale(1) rotate(-5deg); }
+            50% { transform: scale(1.1) rotate(5deg); }
+        }
+        
+        /* Today's Progress */
+        .today-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .today-card.active-now {
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 20px rgba(255, 217, 61, 0.3);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .card-title {
+            font-family: 'Staatliches', cursive;
+            font-size: 28px;
+            letter-spacing: 1px;
+        }
+        
+        .time-indicator {
+            background: var(--accent-gold);
+            color: var(--bg-dark);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            animation: glow 2s ease-in-out infinite;
+        }
+        
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 10px rgba(255, 217, 61, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(255, 217, 61, 0.8); }
+        }
+        
+        .progress-bar {
+            background: var(--checkbox-bg);
+            height: 12px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 25px;
+        }
+        
+        .progress-fill {
+            background: linear-gradient(90deg, var(--accent-fire), var(--accent-electric));
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            box-shadow: 0 0 10px rgba(0, 216, 255, 0.5);
+        }
+        
+        /* Activity Items */
+        .activity-group {
+            margin-bottom: 25px;
+        }
+        
+        .group-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 12px;
+        }
+        
+        .activity-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: var(--checkbox-bg);
+            border-radius: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .activity-item:hover {
+            background: #252d5a;
+            transform: translateX(5px);
+        }
+        
+        .activity-item.completed {
+            background: rgba(46, 204, 113, 0.15);
+            border-left: 4px solid var(--success);
+        }
+        
+        .activity-item.due-now {
+            background: rgba(255, 217, 61, 0.15);
+            border-left: 4px solid var(--accent-gold);
+        }
+        
+        .activity-item.completed::before {
+            content: '✓';
+            position: absolute;
+            right: 15px;
+            font-size: 24px;
+            color: var(--success);
+            font-weight: bold;
+            animation: checkmark 0.3s ease;
+        }
+        
+        @keyframes checkmark {
+            0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+            50% { transform: scale(1.2) rotate(10deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        
+        .checkbox {
+            width: 28px;
+            height: 28px;
+            border: 3px solid var(--text-muted);
+            border-radius: 8px;
+            margin-right: 15px;
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .activity-item.completed .checkbox {
+            background: var(--success);
+            border-color: var(--success);
+        }
+        
+        .activity-item.due-now .checkbox {
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 10px rgba(255, 217, 61, 0.5);
+        }
+        
+        .activity-text {
+            flex: 1;
+            font-size: 15px;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+        
+        .activity-time {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+        
+        .activity-item.due-now .activity-time {
+            color: var(--accent-gold);
+            font-weight: 700;
+        }
+        
+        /* Stats Section */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-family: 'Staatliches', cursive;
+            font-size: 36px;
+            color: var(--accent-electric);
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* History */
+        .history-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 25px;
+        }
+        
+        .week-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--checkbox-bg);
+        }
+        
+        .week-row:last-child {
+            border-bottom: none;
+        }
+        
+        .week-label {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .week-score {
+            font-family: 'Staatliches', cursive;
+            font-size: 20px;
+            color: var(--success);
+        }
+        
+        .week-score.medium {
+            color: var(--warning);
+        }
+        
+        .week-score.low {
+            color: var(--accent-fire);
+        }
+        
+        /* Reset Button */
+        .reset-btn {
+            background: rgba(255, 71, 87, 0.2);
+            border: 2px solid var(--accent-fire);
+            color: var(--accent-fire);
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .reset-btn:hover {
+            background: var(--accent-fire);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Streak Hero -->
+        <div class="streak-hero">
+            <div class="streak-fire">🔥</div>
+            <div class="streak-number" id="streakNumber">0</div>
+            <div class="streak-label">Day Streak</div>
+        </div>
+        
+        <!-- Today's Progress -->
+        <div class="today-card" id="todayCard">
+            <div class="card-header">
+                <div>
+                    <div class="card-title">Today</div>
+                    <div style="font-size: 14px; color: var(--text-muted); margin-top: 4px;" id="dayOfWeek"></div>
+                </div>
+                <div class="time-indicator" id="timeIndicator" style="display: none;">DUE NOW</div>
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+            
+            <!-- Calf Stretches -->
+            <div class="activity-group">
+                <div class="group-title">Calf Stretches (6 mins each)</div>
+                <div class="activity-item" data-id="stretch-1" data-time="wake">
+                    <div class="checkbox"></div>
+                    <div>
+                        <div class="activity-text">On waking</div>
+                        <div class="activity-time">Morning stretch</div>
+                    </div>
+                </div>
+                <div class="activity-item" data-id="stretch-2" data-time="10:00">
+                    <div class="checkbox"></div>
+                    <div>
+                        <div class="activity-text">10:00am alarm</div>
+                        <div class="activity-time">Mid-morning</div>
+                    </div>
+                </div>
+                <div class="activity-item" data-id="stretch-3" data-time="meal">
+                    <div class="checkbox"></div>
+                    <div>
+                        <div class="activity-text">After evening meal</div>
+                        <div class="activity-time">Post-dinner</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Evening Session -->
+            <div class="activity-group">
+                <div class="group-title" id="sessionTitle">Exercise Session (9:30pm)</div>
+                <div class="activity-item" data-id="session" data-time="21:30">
+                    <div class="checkbox"></div>
+                    <div>
+                        <div class="activity-text" id="sessionText">Full session</div>
+                        <div class="activity-time" id="sessionDetail">Shoulder + Calf + Core + Glutes</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Before Bed -->
+            <div class="activity-group">
+                <div class="group-title">Before Bed</div>
+                <div class="activity-item" data-id="stretch-4" data-time="bed">
+                    <div class="checkbox"></div>
+                    <div>
+                        <div class="activity-text">Calf stretches</div>
+                        <div class="activity-time">Final stretch of the day</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="weekPercent">0%</div>
+                <div class="stat-label">This Week</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="bestStreak">0</div>
+                <div class="stat-label">Best Streak</div>
+            </div>
+        </div>
+        
+        <!-- History -->
+        <div class="history-card">
+            <div class="card-header">
+                <div class="card-title">History</div>
+            </div>
+            <div id="historyContainer">
+                <div class="week-row">
+                    <div class="week-label">No history yet</div>
+                    <div class="week-score">-</div>
+                </div>
+            </div>
+        </div>
+        
+        <button class="reset-btn" onclick="resetData()">Reset All Data</button>
+    </div>
+
+    <script>
+        // Configuration
+        const FULL_SESSION_DAYS = [2, 4, 6]; // Tuesday, Thursday, Saturday (0 = Sunday)
+        const ACTIVITIES_PER_DAY = 5; // 4 stretches + 1 session
+        
+        // Data structure
+        let data = {
+            history: {}, // date: { completed: [...ids], total: 5 }
+            currentStreak: 0,
+            bestStreak: 0
+        };
+        
+        // Load data from localStorage
+        function loadData() {
+            const saved = localStorage.getItem('exerciseTracker');
+            if (saved) {
+                data = JSON.parse(saved);
+            }
+        }
+        
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('exerciseTracker', JSON.stringify(data));
+        }
+        
+        // Get today's date string
+        function getTodayKey() {
+            const today = new Date();
+            return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        }
+        
+        // Get today's data
+        function getTodayData() {
+            const key = getTodayKey();
+            if (!data.history[key]) {
+                data.history[key] = {
+                    completed: [],
+                    total: ACTIVITIES_PER_DAY
+                };
+            }
+            return data.history[key];
+        }
+        
+        // Check if activity is completed
+        function isCompleted(activityId) {
+            const today = getTodayData();
+            return today.completed.includes(activityId);
+        }
+        
+        // Toggle activity
+        function toggleActivity(activityId) {
+            const today = getTodayData();
+            const index = today.completed.indexOf(activityId);
+            
+            if (index > -1) {
+                today.completed.splice(index, 1);
+            } else {
+                today.completed.push(activityId);
+            }
+            
+            saveData();
+            updateStreak();
+            render();
+        }
+        
+        // Calculate completion percentage for a day
+        function getDayCompletion(dateKey) {
+            const dayData = data.history[dateKey];
+            if (!dayData) return 0;
+            return Math.round((dayData.completed.length / dayData.total) * 100);
+        }
+        
+        // Update streak calculation
+        function updateStreak() {
+            let streak = 0;
+            let checkDate = new Date();
+            
+            // Work backwards from today
+            while (true) {
+                const dateKey = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
+                const completion = getDayCompletion(dateKey);
+                
+                // Consider 80%+ as maintaining streak
+                if (completion >= 80) {
+                    streak++;
+                    checkDate.setDate(checkDate.getDate() - 1);
+                } else {
+                    break;
+                }
+            }
+            
+            data.currentStreak = streak;
+            if (streak > data.bestStreak) {
+                data.bestStreak = streak;
+            }
+            
+            saveData();
+        }
+        
+        // Get current time context - returns array of all activities that are due
+        function getTimeContext() {
+            const now = new Date();
+            const hour = now.getHours();
+            const minute = now.getMinutes();
+            const time = hour * 100 + minute;
+            
+            const dueActivities = [];
+            
+            // Morning stretch - always due from midnight onwards (new day starts)
+            dueActivities.push('stretch-1');
+            
+            // Mid-morning (9:30am onwards)
+            if (time >= 930) dueActivities.push('stretch-2');
+            
+            // After evening meal (5pm onwards)
+            if (time >= 1700) dueActivities.push('stretch-3');
+            
+            // Exercise session (8:30pm onwards)
+            if (time >= 2030) dueActivities.push('session');
+            
+            // Before bed (10:30pm onwards)
+            if (time >= 2230) dueActivities.push('stretch-4');
+            
+            return dueActivities;
+        }
+        
+        // Determine session type based on day
+        function getSessionType() {
+            const day = new Date().getDay();
+            return FULL_SESSION_DAYS.includes(day) ? 'full' : 'light';
+        }
+        
+        // Get day of week and date
+        function getDayOfWeek() {
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const now = new Date();
+            const dayName = days[now.getDay()];
+            const date = now.getDate();
+            const month = months[now.getMonth()];
+            return `${dayName}, ${date} ${month}`;
+        }
+        
+        // Render the UI
+        function render() {
+            const today = getTodayData();
+            const dueActivities = getTimeContext();
+            const sessionType = getSessionType();
+            
+            // Update day of week display
+            document.getElementById('dayOfWeek').textContent = getDayOfWeek();
+            
+            // Update streak display
+            document.getElementById('streakNumber').textContent = data.currentStreak;
+            document.getElementById('bestStreak').textContent = data.bestStreak;
+            
+            // Update session text based on day
+            if (sessionType === 'full') {
+                document.getElementById('sessionText').textContent = 'Full session (30-45 mins)';
+                document.getElementById('sessionDetail').textContent = 'Shoulder + Calf + Core + Glutes';
+            } else {
+                document.getElementById('sessionText').textContent = 'Light session (15 mins)';
+                document.getElementById('sessionDetail').textContent = 'Core + Glutes';
+            }
+            
+            // Update progress bar
+            const completion = (today.completed.length / today.total) * 100;
+            document.getElementById('progressFill').style.width = `${completion}%`;
+            
+            // Check if any due activities are incomplete
+            let hasIncompleteDue = false;
+            
+            // Update activity items
+            const items = document.querySelectorAll('.activity-item');
+            items.forEach(item => {
+                const id = item.dataset.id;
+                const isDue = dueActivities.includes(id);
+                const completed = isCompleted(id);
+                
+                // Update classes
+                item.classList.toggle('completed', completed);
+                item.classList.toggle('due-now', isDue && !completed);
+                
+                if (isDue && !completed) {
+                    hasIncompleteDue = true;
+                }
+            });
+            
+            // Show/hide time indicator
+            const timeIndicator = document.getElementById('timeIndicator');
+            if (hasIncompleteDue) {
+                timeIndicator.style.display = 'block';
+                document.getElementById('todayCard').classList.add('active-now');
+            } else {
+                timeIndicator.style.display = 'none';
+                document.getElementById('todayCard').classList.remove('active-now');
+            }
+            
+            // Update week percentage
+            const weekStart = new Date();
+            weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Start of week
+            let weekTotal = 0;
+            let weekCompleted = 0;
+            
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(weekStart);
+                date.setDate(date.getDate() + i);
+                const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                
+                if (data.history[dateKey]) {
+                    weekTotal += data.history[dateKey].total;
+                    weekCompleted += data.history[dateKey].completed.length;
+                }
+            }
+            
+            const weekPercent = weekTotal > 0 ? Math.round((weekCompleted / weekTotal) * 100) : 0;
+            document.getElementById('weekPercent').textContent = `${weekPercent}%`;
+            
+            // Render history
+            renderHistory();
+        }
+        
+        // Render history section
+        function renderHistory() {
+            const container = document.getElementById('historyContainer');
+            const weeks = [];
+            
+            // Get last 4 weeks
+            for (let w = 0; w < 4; w++) {
+                const weekStart = new Date();
+                weekStart.setDate(weekStart.getDate() - weekStart.getDay() - (w * 7));
+                
+                let weekTotal = 0;
+                let weekCompleted = 0;
+                
+                for (let i = 0; i < 7; i++) {
+                    const date = new Date(weekStart);
+                    date.setDate(date.getDate() + i);
+                    const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                    
+                    if (data.history[dateKey]) {
+                        weekTotal += data.history[dateKey].total;
+                        weekCompleted += data.history[dateKey].completed.length;
+                    }
+                }
+                
+                if (weekTotal > 0) {
+                    const percent = Math.round((weekCompleted / weekTotal) * 100);
+                    weeks.push({
+                        label: w === 0 ? 'This week' : w === 1 ? 'Last week' : `${w} weeks ago`,
+                        percent: percent
+                    });
+                }
+            }
+            
+            if (weeks.length === 0) {
+                container.innerHTML = '<div class="week-row"><div class="week-label">No history yet</div><div class="week-score">-</div></div>';
+            } else {
+                container.innerHTML = weeks.map(week => {
+                    let scoreClass = 'week-score';
+                    if (week.percent < 50) scoreClass += ' low';
+                    else if (week.percent < 80) scoreClass += ' medium';
+                    
+                    return `
+                        <div class="week-row">
+                            <div class="week-label">${week.label}</div>
+                            <div class="${scoreClass}">${week.percent}%</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+        
+        // Reset all data
+        function resetData() {
+            if (confirm('Are you sure you want to reset all data? This cannot be undone.')) {
+                localStorage.removeItem('exerciseTracker');
+                data = {
+                    history: {},
+                    currentStreak: 0,
+                    bestStreak: 0
+                };
+                render();
+            }
+        }
+        
+        // Initialize
+        loadData();
+        updateStreak();
+        render();
+        
+        // Set up click handlers
+        document.querySelectorAll('.activity-item').forEach(item => {
+            item.addEventListener('click', () => {
+                toggleActivity(item.dataset.id);
+            });
+        });
+        
+        // Update UI every minute to refresh time context
+        setInterval(render, 60000);
+    </script>
+</body>
+</html>
